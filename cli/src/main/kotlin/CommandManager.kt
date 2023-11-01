@@ -2,6 +2,8 @@ import utils.State
 import kotlin.reflect.KClass
 import kotlin.reflect.safeCast
 
+//InternetAddress
+
 typealias ArgumentValidator = (Any) -> Boolean
 typealias CommandCallback = (State, List<Any>) -> Unit
 
