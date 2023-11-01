@@ -2,6 +2,7 @@ package models
 
 import annotations.Column
 import annotations.Entity
+import java.sql.Timestamp
 import java.time.Instant
 
 @Entity("reads")
@@ -22,13 +23,13 @@ interface Reads {
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("readsStartTime")
     @set:JvmName("setReadsStartTime")
-    var startTime: java.util.Date
+    var startTime: Timestamp
 
     @Column("end_time")
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("readsEndTime")
     @set:JvmName("setReadsEndTime")
-    var endTime: java.util.Date
+    var endTime: Timestamp
 
     @Column("start_page")
     @Suppress("INAPPLICABLE_JVM_NAME")

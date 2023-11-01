@@ -2,6 +2,7 @@ package models
 
 import annotations.Column
 import annotations.Entity
+import java.sql.Timestamp
 
 @Entity("reader")
 interface Reader {
@@ -45,11 +46,11 @@ interface Reader {
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("readerLastAccessDate")
     @set:JvmName("setReaderLastAccessDate")
-    var lastAccessDate: java.util.Date
+    var lastAccessDate: Timestamp
 
     @Column("creation_date")
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("readerCreationDate")
     @set:JvmName("setReaderCreationDate")
-    var creationDate: java.util.Date
+    var creationDate: Timestamp
 }

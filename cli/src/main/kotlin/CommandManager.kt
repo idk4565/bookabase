@@ -2,8 +2,6 @@ import utils.State
 import kotlin.reflect.KClass
 import kotlin.reflect.safeCast
 
-//InternetAddress
-
 typealias ArgumentValidator = (Any) -> Boolean
 typealias CommandCallback = (State, List<Any>) -> Unit
 
@@ -26,7 +24,6 @@ class CommandManager(var state: State, vararg commands: Command) {
     private val helpMessage: String = """
     Available Commands:
       user
-        list
         enter [name]
           follow [email]
           unfollow [email]

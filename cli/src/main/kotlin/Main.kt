@@ -1,4 +1,7 @@
 import actions.UserActions
+import models.Book
+import models.Collection
+import models.Reader
 import org.apache.commons.validator.routines.EmailValidator
 import utils.Database
 import utils.State
@@ -57,16 +60,15 @@ fun main(args: Array<String>) {
     val commandManager = CommandManager(
         // State
         object : State {
-            override var userId: Int = -1
-            override var collectionId: Int = -1
-            override var bookId: Int = -1
+            override var user: Reader? = null
+            override var collection: Collection? = null
+            override var book: Book? = null
         },
         // User Commands
         Command("user", "enter", listOf(
             Pair(String::class) { (it as String).length <= 14 }
         ), UserActions.enterUser),
         Command("user", "exit", listOf(), UserActions.exitUser),
-        Command("user", "list", listOf(), UserActions.listUser),
         Command("user", "follow", listOf(
             Pair(String::class) { EmailValidator.getInstance().isValid(it as String) }
         ), UserActions.followUser),
