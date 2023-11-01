@@ -1,3 +1,4 @@
+import actions.CollectionActions
 import actions.UserActions
 import models.Book
 import models.Collection
@@ -65,16 +66,19 @@ fun main(args: Array<String>) {
             override var book: Book? = null
         },
         // User Commands
-        Command("user", "enter", listOf(
-            Pair(String::class) { (it as String).length <= 14 }
-        ), UserActions.enterUser),
+        Command("user", "enter", listOf { it.isNotEmpty() && it.length <= 14 }, UserActions.enterUser),
         Command("user", "exit", listOf(), UserActions.exitUser),
-        Command("user", "follow", listOf(
-            Pair(String::class) { EmailValidator.getInstance().isValid(it as String) }
-        ), UserActions.followUser),
-        Command("user", "unfollow", listOf(
-            Pair(String::class) { EmailValidator.getInstance().isValid(it as String) }
-        ), UserActions.unfollowUser),
+        Command("user", "follow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.followUser),
+        Command("user", "unfollow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.unfollowUser),
+        // Collection Commands
+        Command("collection", "list", listOf(), CollectionActions.listCollections),
+        Command("collection", "create", listOf(), CollectionActions.createCollection),
+        Command("collection", "enter", listOf { it.toIntOrNull() != null }, CollectionActions.enterCollection),
+        Command("collection", "rename", listOf(), CollectionActions.renameCollection),
+        Command("collection", "add", listOf { it.toIntOrNull() != null }, CollectionActions.addToCollection),
+        Command("collection", "remove", listOf { it.toIntOrNull() != null }, CollectionActions.removeFromCollection),
+        Command("collection", "delete", listOf(), CollectionActions.deleteCollection),
+        Command("collection", "exit", listOf(), CollectionActions.exitCollection),
     )
 
     while (true) {

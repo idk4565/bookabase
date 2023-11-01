@@ -3,7 +3,6 @@ package models
 import annotations.Column
 import annotations.Entity
 import java.sql.Timestamp
-import java.time.Instant
 
 @Entity("reads")
 interface Reads {

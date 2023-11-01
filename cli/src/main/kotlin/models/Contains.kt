@@ -16,4 +16,10 @@ interface Contains {
     @get:JvmName("containsBookId")
     @set:JvmName("setContainsBookId")
     var bookId: Int
+
+    @Column("reader_id")
+    @Suppress("INAPPLICABLE_JVM_NAME")
+    @get:JvmName("containsReaderId")
+    @set:JvmName("setContainsReaderId")
+    var readerId: Int
 }

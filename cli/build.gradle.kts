@@ -16,6 +16,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.6.0")
     implementation("com.jcraft:jsch:0.1.55")
     implementation("commons-validator:commons-validator:1.7")
+    implementation("de.m3y.kformat:kformat:0.10")
     implementation(kotlin("reflect"))
 }
 

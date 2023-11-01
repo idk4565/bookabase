@@ -2,13 +2,13 @@ import utils.State
 import kotlin.reflect.KClass
 import kotlin.reflect.safeCast
 
-typealias ArgumentValidator = (Any) -> Boolean
-typealias CommandCallback = (State, List<Any>) -> Unit
+typealias ArgumentValidator = (String) -> Boolean
+typealias CommandCallback = (State, List<String>) -> Unit
 
 class Command(
     val domain: String = "",
     val name: String,
-    val arguments: List<Pair<KClass<*>, ArgumentValidator>>,
+    val arguments: List<ArgumentValidator>,
     val callback: CommandCallback
 )
 
@@ -55,11 +55,10 @@ class CommandManager(var state: State, vararg commands: Command) {
         if (splitInput.size < command.arguments.size) { return }
         else if (splitInput.size > command.arguments.size) { return }
 
-        val results = mutableListOf<Any>()
+        val results = mutableListOf<String>()
         for ((i, v) in splitInput.withIndex()) {
             val argumentInfo = command.arguments[i]
-            if (argumentInfo.first.safeCast(v) == null) { return }
-            if (!argumentInfo.second(v)) { return }
+            if (!argumentInfo(v)) { return }
 
             results.add(v)
         }

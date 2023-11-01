@@ -14,7 +14,7 @@ object UserActions {
             return@start
         }
 
-        val nameString = name as String
+        val nameString = name
         val statement = Database.connection.prepareStatement(
             """
                 SELECT *
@@ -53,6 +53,8 @@ object UserActions {
             val (_, updateResult) = Database.runQuery(updateStatement, Reader::class)
 
             state.user = (updateResult.first() as Reader)
+            println("Welcome back!")
+
             return@start
         }
 
@@ -85,11 +87,13 @@ object UserActions {
     }
 
     val exitUser: CommandCallback = { state, _ ->
+        println("Exited user ${state.user!!.username}!")
         state.user = null
+        state.collection = null
     }
 
     val followUser: CommandCallback = start@ { state, (email) ->
-        val emailAsString = email as String
+        val emailAsString = email
         if (state.user == null) {
             println("You must be logged in to follow a user!")
             return@start
@@ -147,7 +151,7 @@ object UserActions {
     }
 
     val unfollowUser: CommandCallback = start@ { state, (email) ->
-        val emailAsString = email as String
+        val emailAsString = email
         if (state.user == null) {
             println("You must be logged in to unfollow a user!")
             return@start
