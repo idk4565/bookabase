@@ -10,24 +10,6 @@ import utils.State
 import kotlin.io.path.Path
 
 /**
- * create -> Create
- *      user -> Create User
- *      collection -> Create Collection
- * login -> Login
- * logout -> Logout
- * collections -> Gets all collections
- * delete collection -> Delete collection
- * update collection -> Update collection
- * rate -> Rate book
- * read -> Read book
- * search -> Search
- *      user -> Search user
- *      book -> Search book
- * follow -> Follow
- * unfollow -> Unfollow
- */
-
-/**
  *     Available Commands:
  *       user
  *         list
@@ -83,6 +65,11 @@ fun main(args: Array<String>) {
         Command("collection", "delete", listOf(), CollectionActions.deleteCollection),
         Command("collection", "exit", listOf(), CollectionActions.exitCollection),
         // Book Commands
+        Command("book", "enter", listOf(
+//            { },
+//            {  },
+//            { it.isNotEmpty() && (it == "asc" || it == "desc") }
+        ), BookActions.listBooks),
         Command("book", "enter", listOf { it.toIntOrNull() != null }, BookActions.enterBook),
         Command("book", "read", listOf(alwaysTrueValidator), BookActions.bookStartReading),
         Command("book", "stop", listOf(), BookActions.bookStopReading),
