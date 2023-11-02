@@ -1,12 +1,13 @@
 package actions
 
 import CommandCallback
+import de.m3y.kformat.Table
+import de.m3y.kformat.table
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import models.Book
-import models.Rates
-import models.Reads
+import models.*
+import models.Collection
 import utils.Database
 import java.io.File
 import java.sql.Timestamp
@@ -36,7 +37,14 @@ object BookActions {
         name, publisher, genre, and released year (ascending and descending)
          */
         //check what they searched by
-        var searchQueryBuilder = "SELECT * FROM book WHERE $searchCriteria LIKE '%$searchValue%'"
+        var searchQueryBuilder =
+                """
+                    SELECT title, page_length, a.audience_name
+                    FROM book b 
+                    LEFT JOIN audience a 
+                        ON a.audience_id = b.audience_id
+                    WHERE $searchCriteria LIKE '%$searchValue%'
+                """.trimIndent()
 
         // check if they wanted to sort
         searchQueryBuilder += if (sortCriteria == "") {
@@ -56,14 +64,34 @@ object BookActions {
 
         val bookExistsQuery = Database.connection.prepareStatement(searchQueryBuilder)
 
-        val (_, bookExistsResult) = Database.runQuery(bookExistsQuery, Book::class)
+        val (_, bookExistsResult) = Database.runQuery(bookExistsQuery, Book::class, Audience::class)
         if (bookExistsResult.isEmpty()) {
             println("No results found")
             return@start
         }
 
-        // else
-        println("Success")
+        // else if results found
+        println()
+        table {
+            header("Title", "Authors", "Publisher", "Page Length", "Audience", "Ratings")
+            bookExistsResult.map {
+                val asBook = it as Book
+                val asAudience = it as Audience
+                this.row(
+                        asBook.title,
+                        //asComputed.computed1,
+                        //asComputed.computed2,
+                        asBook.pageLength,
+                        asAudience.name,
+                        //asComputed.computed3
+                )
+            }
+
+            hints {
+                alignment("Title", Table.Hints.Alignment.LEFT)
+                borderStyle = Table.BorderStyle.SINGLE_LINE
+            }
+        }.print(System.out)
 
     }
 
