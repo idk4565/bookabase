@@ -18,11 +18,52 @@ import kotlin.io.path.writeText
 
 object BookActions {
     @Serializable
-    data class BookReadData(val bookId: Int, val startTime: Long, val startPage: Int);
+    data class BookReadData(val bookId: Int, val startTime: Long, val startPage: Int)
 
     private val statusPath = Path(System.getProperty("user.dir"), "status.json")
 
-    val listBooks: CommandCallback = { state, (searchCriteria, searchValue, sortCriteria, sortOrder) ->
+    val listBooks: CommandCallback = start@{ state, (searchCriteria, searchValue, sortCriteria, sortOrder) ->
+        if (state.user == null) {
+            println("You must be logged in to search books!")
+            return@start
+        }
+
+        /*
+        Users will be able to search for books by name, release date, authors, publisher, or
+        genre. The resulting list of books must show the book’s name, the authors, the pub-
+        lisher, the length, audience and the ratings. The list must be sorted alphabetically
+        (ascending) by book’s name and release date. Users can sort the resulting list: book
+        name, publisher, genre, and released year (ascending and descending)
+         */
+        //check what they searched by
+        var searchQueryBuilder = "SELECT * FROM book WHERE $searchCriteria LIKE '%$searchValue%'"
+
+        // check if they wanted to sort
+        searchQueryBuilder += if (sortCriteria == "") {
+            "ORDER BY title, release date"
+        }
+        else {
+            "ORDER BY $sortCriteria"
+        }
+
+        // check for asc vs dsc
+        searchQueryBuilder += if (sortOrder == "") {
+            " ASC"
+        }
+        else {
+            " $sortOrder"
+        }
+
+        val bookExistsQuery = Database.connection.prepareStatement(searchQueryBuilder)
+
+        val (_, bookExistsResult) = Database.runQuery(bookExistsQuery, Book::class)
+        if (bookExistsResult.isEmpty()) {
+            println("Failed!")
+            return@start
+        }
+
+        // else
+        println("Success")
 
     }
 
