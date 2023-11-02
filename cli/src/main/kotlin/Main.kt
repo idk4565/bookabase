@@ -60,8 +60,6 @@ fun main(args: Array<String>) {
         return
     }
 
-    println(Path(System.getProperty("user.dir"), "status.json"))
-
     val commandManager = CommandManager(
         // State
         object : State {
@@ -70,7 +68,7 @@ fun main(args: Array<String>) {
             override var book: Book? = null
         },
         // User Commands
-        Command("user", "enter", listOf { it.isNotEmpty() && it.length <= 14 }, UserActions.enterUser),
+        Command("user", "enter", listOf { it.isNotEmpty() && it.length <= 64 }, UserActions.enterUser),
         Command("user", "exit", listOf(), UserActions.exitUser),
         Command("user", "follow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.followUser),
         Command("user", "unfollow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.unfollowUser),

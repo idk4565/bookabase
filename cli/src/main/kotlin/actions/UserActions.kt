@@ -8,21 +8,20 @@ import java.sql.Timestamp
 import java.time.Instant
 
 object UserActions {
-    val enterUser: CommandCallback = start@ { state, (name) ->
+    val enterUser: CommandCallback = start@ { state, (email) ->
         if (state.user != null) {
             println("There is already a logged in user.")
             return@start
         }
 
-        val nameString = name
         val statement = Database.connection.prepareStatement(
             """
                 SELECT *
                 FROM reader
-                WHERE username = ?
+                WHERE email = ?
             """.trimIndent()
         )
-        statement.setString(1, nameString)
+        statement.setString(1, email)
         val (_, selectResult) = Database.runQuery(statement, Reader::class)
 
         // if the user exists
@@ -63,7 +62,7 @@ object UserActions {
                 "To get started, please answer the following questions: ")
         val firstName = getInput("First Name: ", 48)
         val lastName = getInput("Last Name: ", 48)
-        val email = getInput("Email: ", 64)
+        val username = getInput("Username: ", 12)
         val password = getInput("Password: ", 48)
 
         // insert new user
@@ -74,7 +73,7 @@ object UserActions {
                 RETURNING *
             """.trimIndent()
         )
-        newUserStatement.setString(1, nameString)
+        newUserStatement.setString(1, username)
         newUserStatement.setString(2, password)
         newUserStatement.setString(3, firstName)
         newUserStatement.setString(4, lastName)
