@@ -40,10 +40,10 @@ object BookActions {
 
         // check if they wanted to sort
         searchQueryBuilder += if (sortCriteria == "") {
-            "ORDER BY title, release date"
+            " ORDER BY title, release date"
         }
         else {
-            "ORDER BY $sortCriteria"
+            " ORDER BY $sortCriteria"
         }
 
         // check for asc vs dsc
@@ -58,7 +58,7 @@ object BookActions {
 
         val (_, bookExistsResult) = Database.runQuery(bookExistsQuery, Book::class)
         if (bookExistsResult.isEmpty()) {
-            println("Failed!")
+            println("No results found")
             return@start
         }
 
