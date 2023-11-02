@@ -1,3 +1,4 @@
+import actions.BookActions
 import actions.CollectionActions
 import actions.UserActions
 import models.Book
@@ -6,6 +7,7 @@ import models.Reader
 import org.apache.commons.validator.routines.EmailValidator
 import utils.Database
 import utils.State
+import kotlin.io.path.Path
 
 /**
  * create -> Create
@@ -58,6 +60,8 @@ fun main(args: Array<String>) {
         return
     }
 
+    println(Path(System.getProperty("user.dir"), "status.json"))
+
     val commandManager = CommandManager(
         // State
         object : State {
@@ -72,6 +76,7 @@ fun main(args: Array<String>) {
         Command("user", "unfollow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.unfollowUser),
         // Collection Commands
         Command("collection", "list", listOf(), CollectionActions.listCollections),
+        Command("collection", "books", listOf { it.toIntOrNull() != null }, CollectionActions.booksInCollection),
         Command("collection", "create", listOf(), CollectionActions.createCollection),
         Command("collection", "enter", listOf { it.toIntOrNull() != null }, CollectionActions.enterCollection),
         Command("collection", "rename", listOf(), CollectionActions.renameCollection),
@@ -79,6 +84,12 @@ fun main(args: Array<String>) {
         Command("collection", "remove", listOf { it.toIntOrNull() != null }, CollectionActions.removeFromCollection),
         Command("collection", "delete", listOf(), CollectionActions.deleteCollection),
         Command("collection", "exit", listOf(), CollectionActions.exitCollection),
+        // Book Commands
+        Command("book", "enter", listOf { it.toIntOrNull() != null }, BookActions.enterBook),
+        Command("book", "read", listOf(alwaysTrueValidator), BookActions.bookStartReading),
+        Command("book", "stop", listOf(), BookActions.bookStopReading),
+        Command("book", "rate", listOf { it.toIntOrNull() != null && it.toInt() >= 0 && it.toInt() <= 5 }, BookActions.rateBook),
+        Command("book", "exit", listOf(), BookActions.exitBook),
     )
 
     while (true) {

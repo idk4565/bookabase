@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "1.9.0"
+    kotlin("plugin.serialization") version "1.9.0"
     application
 }
 
@@ -17,6 +18,7 @@ dependencies {
     implementation("com.jcraft:jsch:0.1.55")
     implementation("commons-validator:commons-validator:1.7")
     implementation("de.m3y.kformat:kformat:0.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(kotlin("reflect"))
 }
 

@@ -3,10 +3,8 @@ package actions
 import CommandCallback
 import de.m3y.kformat.Table
 import de.m3y.kformat.table
-import models.Book
+import models.*
 import models.Collection
-import models.Computed
-import models.Contains
 import utils.Database
 import utils.State
 
@@ -54,6 +52,58 @@ object CollectionActions {
 
             hints {
                 alignment("Name", Table.Hints.Alignment.LEFT)
+                borderStyle = Table.BorderStyle.SINGLE_LINE
+            }
+        }.print(System.out)
+    }
+
+    val booksInCollection: CommandCallback = start@ { state, (id) ->
+        // prelims
+        if (state.user == null) {
+            println("You need to be logged in to see the books in a collection!")
+            return@start
+        }
+
+        val idAsInt = id.toInt()
+        val allBookQuery = Database.connection.prepareStatement(
+            """
+                SELECT b.book_id,
+                       b.title,
+                       (SELECT audience_name
+                        FROM audience a
+                        WHERE a.audience_id = b.audience_id) as computed3,
+                       (SELECT genre_name
+                        FROM genre g
+                        WHERE g.genre_id = b.genre_id) as computed4,
+                       b.page_length,
+                       b.release_date
+                FROM (
+                    SELECT *
+                    FROM contains
+                    WHERE reader_id = ? AND collection_id = ?
+                ) cont
+                INNER JOIN book b
+                    ON cont.book_id = b.book_id
+            """.trimIndent()
+        )
+        allBookQuery.setInt(1, state.user!!.id)
+        allBookQuery.setInt(2, idAsInt)
+        val (_, allBooksResult) = Database.runQuery(allBookQuery, Book::class, Computed::class)
+
+        println()
+        table {
+            header("ID", "Title", "Audience", "Genre", "Page Length", "Release Date")
+            allBooksResult.map {
+                val asBook = it as Book
+                val asComputed = it as Computed
+                this.row(asBook.id, asBook.title, asComputed.computed3, asComputed.computed4, asBook.pageLength, asBook.releaseDate)
+            }
+
+            hints {
+                alignment("Title", Table.Hints.Alignment.LEFT)
+                alignment("Audience", Table.Hints.Alignment.LEFT)
+                alignment("Genre", Table.Hints.Alignment.LEFT)
+                alignment("Release Date", Table.Hints.Alignment.LEFT)
                 borderStyle = Table.BorderStyle.SINGLE_LINE
             }
         }.print(System.out)
