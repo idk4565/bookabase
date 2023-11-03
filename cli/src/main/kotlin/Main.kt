@@ -77,7 +77,6 @@ fun main(args: Array<String>) {
         Command("book", "stop", listOf(), BookActions.bookStopReading),
         Command("book", "rate", listOf { it.toIntOrNull() != null && it.toInt() >= 1 && it.toInt() <= 5 }, BookActions.rateBook),
         Command("book", "exit", listOf(), BookActions.exitBook),
-        Command("book", "list", listOf( {it != null},  {it != null}, { it != null}, { it != null }), BookActions.listBooks)
     )
 
     while (true) {
