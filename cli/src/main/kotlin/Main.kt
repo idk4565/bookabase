@@ -51,6 +51,7 @@ fun main(args: Array<String>) {
         },
         // User Commands
         Command("user", "enter", listOf { it.isNotEmpty() && it.length <= 64 }, UserActions.enterUser),
+        Command("user", "search", listOf { it.isNotEmpty() && it.length <= 64 }, UserActions.searchUsers),
         Command("user", "exit", listOf(), UserActions.exitUser),
         Command("user", "follow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.followUser),
         Command("user", "unfollow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.unfollowUser),

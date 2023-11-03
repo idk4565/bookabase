@@ -38,7 +38,8 @@ object BookActions {
                             (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
                             (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
                             b.page_length,
-                            b.release_date
+                            b.release_date,
+                            (SELECT COALESCE(AVG(rating), -1) FROM rates WHERE book_id = b.book_id)::int as computed2
                         FROM book b
                         WHERE LOWER(b.title) LIKE LOWER(?)
                         ORDER BY b.title ASC, b.release_date ASC
@@ -58,7 +59,8 @@ object BookActions {
                             (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
                             (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
                             b.page_length,
-                            b.release_date
+                            b.release_date,
+                            (SELECT COALESCE(AVG(rating), -1) FROM rates WHERE book_id = b.book_id)::int as computed2
                         FROM book b
                         WHERE ? <= b.release_date
                         ORDER BY b.title ASC, b.release_date ASC
@@ -78,7 +80,8 @@ object BookActions {
                             (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
                             (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
                             b.page_length,
-                            b.release_date
+                            b.release_date,
+                            (SELECT COALESCE(AVG(rating), -1) FROM rates WHERE book_id = b.book_id)::int as computed2
                         FROM book b
                         WHERE ? >= b.release_date
                         ORDER BY b.title ASC, b.release_date ASC
@@ -98,7 +101,8 @@ object BookActions {
                             (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
                             (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
                             b.page_length,
-                            b.release_date
+                            b.release_date,
+                            (SELECT COALESCE(AVG(rating), -1) FROM rates WHERE book_id = b.book_id)::int as computed2
                         FROM book b
                         INNER JOIN authors a
                             ON a.book_id = b.book_id
@@ -122,7 +126,8 @@ object BookActions {
                             (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
                             (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
                             b.page_length,
-                            b.release_date
+                            b.release_date,
+                            (SELECT COALESCE(AVG(rating), -1) FROM rates WHERE book_id = b.book_id)::int as computed2
                         FROM book b
                         INNER JOIN publishes p
                             ON p.book_id = b.book_id
@@ -146,7 +151,8 @@ object BookActions {
                             (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
                             g.genre_name,
                             b.page_length,
-                            b.release_date
+                            b.release_date,
+                            (SELECT COALESCE(AVG(rating), -1) FROM rates WHERE book_id = b.book_id)::int as computed2
                         FROM book b
                         INNER JOIN genre g
                             ON b.genre_id = g.genre_id
@@ -212,7 +218,7 @@ object BookActions {
 
         println()
         table {
-            header("ID", "Title", "Publisher", "Audience", "Genre", "Page Length", "Release Date")
+            header("ID", "Title", "Publisher", "Audience", "Genre", "Page Length", "Release Date", "Rating")
             searchResult.forEach {
                 val asBook = it as Book
                 val asComputed = it as Computed
@@ -226,7 +232,8 @@ object BookActions {
                             asComputed.computed4,
                             (it as Genre).name,
                             asBook.pageLength,
-                            asBook.releaseDate
+                            asBook.releaseDate,
+                            if (asComputed.computed2 != -1) "${asComputed.computed2}/5" else "N/A"
                         )
                     }
 
@@ -238,7 +245,8 @@ object BookActions {
                             asComputed.computed4,
                             asComputed.computed5,
                             asBook.pageLength,
-                            asBook.releaseDate
+                            asBook.releaseDate,
+                            if (asComputed.computed2 != -1) "${asComputed.computed2}/5" else "N/A"
                         )
                     }
                 }

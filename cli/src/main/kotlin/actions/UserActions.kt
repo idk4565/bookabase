@@ -1,6 +1,9 @@
 package actions
 
+import Command
 import CommandCallback
+import de.m3y.kformat.Table
+import de.m3y.kformat.table
 import models.Follows
 import models.Reader
 import utils.Database
@@ -83,6 +86,44 @@ object UserActions {
 
         val (_, insertResult) = Database.runQuery(newUserStatement, Reader::class)
         state.user = (insertResult.first() as Reader)
+    }
+
+    val searchUsers: CommandCallback = start@ { state, (email) ->
+        if (state.user == null) {
+            println("You must be logged in to search users!")
+            return@start
+        }
+
+        // Get users with like email
+        val searchUserQuery = Database.connection.prepareStatement(
+            """
+                SELECT firstname, lastname, email
+                FROM reader
+                WHERE LOWER(email) LIKE LOWER(?)
+            """.trimIndent()
+        )
+        searchUserQuery.setString(1, "$email%")
+        val (_, searchUserResults) = Database.runQuery(searchUserQuery, Reader::class)
+        if (searchUserResults.isEmpty()) {
+            println("No users found with that email!")
+            return@start
+        }
+
+        println()
+        table {
+            header("First Name", "Last Name", "Email")
+            searchUserResults.forEach {
+                val asReader = it as Reader
+                this.row(asReader.firstName, asReader.lastName, asReader.email)
+            }
+
+            hints {
+                alignment("First Name", Table.Hints.Alignment.LEFT)
+                alignment("Last Name", Table.Hints.Alignment.LEFT)
+                alignment("Email", Table.Hints.Alignment.LEFT)
+                borderStyle = Table.BorderStyle.SINGLE_LINE
+            }
+        }.print(System.out)
     }
 
     val exitUser: CommandCallback = { state, _ ->
