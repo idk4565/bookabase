@@ -45,24 +45,56 @@ class CommandManager(var state: State, vararg commands: Command) {
     """
 
     fun parseCommand(input: String) {
-        val splitInput: MutableList<String> = input.split(" ").toMutableList()
-        var key = splitInput.removeFirst()
-        if (splitInput.size >= 1 && !commands.containsKey(key)) { key = "${key}.${splitInput.removeFirst()}" }
-        if (!commands.containsKey(key)) { return }
-        val command = commands[key]!!
+        var key = input.substring(0, input.indexOfFirst { it == ' ' })
+        var mutableInput = input.substring(input.indexOfFirst { it == ' ' } + 1)
+        if (!commands.containsKey(key)) {
+            var rest = mutableInput.indexOfFirst { it == ' ' }
+            if (rest == -1) { rest = mutableInput.length }
+            key = "${key}.${mutableInput.substring(0, rest)}"
+            mutableInput = mutableInput.substring(if (rest == mutableInput.length) rest else rest + 1)
 
-        // Some basic checks so it doesn't explode
-        if (splitInput.size < command.arguments.size) { return }
-        else if (splitInput.size > command.arguments.size) { return }
-
-        val results = mutableListOf<String>()
-        for ((i, v) in splitInput.withIndex()) {
-            val argumentInfo = command.arguments[i]
-            if (!argumentInfo(v)) { return }
-
-            results.add(v)
+            if (!commands.containsKey(key)) {
+                println("Command does not exist!")
+                return
+            }
         }
 
-        command.callback(state, results)
+        val command = commands[key]!!
+        val arguments = mutableListOf<String>()
+        var start = 0; var current = 0; var inQuote = false
+        while (current < mutableInput.length) {
+            if (mutableInput[current] == '"') {
+                if (inQuote) {
+                    arguments.add(mutableInput.substring(start + 1, current))
+                    start = current + 1
+                    inQuote = false
+                } else {
+                    inQuote = true
+                }
+            } else if (mutableInput[current] == ' ' && !inQuote) {
+                arguments.add(mutableInput.substring(start, current))
+                start = current + 1
+            }
+
+            ++current
+        }
+        if (start != current) arguments.add(mutableInput.substring(start, current))
+
+        // Some basic checks so it doesn't explode
+        if (arguments.size != command.arguments.size) {
+            println("Too little to too many arguments passed! " +
+                    "Got ${arguments.size}, Expected ${command.arguments.size}")
+            return
+        }
+
+        // validate each item
+        for (i in arguments.indices) {
+            if (!command.arguments[i].invoke(arguments[i])) {
+                println("Argument '${arguments[i]}' failed validation!")
+                return
+            }
+        }
+
+        command.callback(state, arguments)
     }
 }

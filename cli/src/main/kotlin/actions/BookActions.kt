@@ -118,7 +118,6 @@ object BookActions {
                 borderStyle = Table.BorderStyle.SINGLE_LINE
             }
         }.print(System.out)
-
     }
 
     val enterBook: CommandCallback = start@{ state, (id) ->

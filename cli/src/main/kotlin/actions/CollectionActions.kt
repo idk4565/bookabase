@@ -109,14 +109,13 @@ object CollectionActions {
         }.print(System.out)
     }
 
-    val createCollection: CommandCallback = start@ { state, _ ->
+    val createCollection: CommandCallback = start@ { state, (name) ->
         if (state.user == null) {
             println("You need to be logged in to enter a collection!")
             return@start
         }
 
         // make sure it doesn't exist
-        val strippedName = getInput("Collection Name: ", 64)
         val collectionExistsQuery = Database.connection.prepareStatement(
             """
                 SELECT *
@@ -124,10 +123,10 @@ object CollectionActions {
                 WHERE collection_name = ?
             """.trimIndent()
         )
-        collectionExistsQuery.setString(1, strippedName)
+        collectionExistsQuery.setString(1, name)
         val (_, collectionExistsResult) = Database.runQuery(collectionExistsQuery, Collection::class)
         if (collectionExistsResult.isNotEmpty()) {
-            println("Collection with name \"$strippedName\" already exists! " +
+            println("Collection with name \"$name\" already exists! " +
                     "Its id is ${(collectionExistsResult.first() as Collection).id}")
             return@start
         }
@@ -140,15 +139,15 @@ object CollectionActions {
                 RETURNING *
             """.trimIndent()
         )
-        newCollectionQuery.setString(1, strippedName)
+        newCollectionQuery.setString(1, name)
         newCollectionQuery.setInt(2, state.user!!.id)
         val (_, newCollectionResult) = Database.runQuery(newCollectionQuery, Collection::class)
         if (newCollectionResult.isEmpty()) {
-            println("Unable to create new collection with name $strippedName!")
+            println("Unable to create new collection with name $name!")
             return@start
         }
 
-        println("Successfully created collection with name $strippedName! " +
+        println("Successfully created collection with name $name! " +
                 "It's id is ${(newCollectionResult.first() as Collection).id}. " +
                 "Use this id if you want to enter it. You can also find the id by running " +
                 "`collection list`.")
@@ -182,12 +181,11 @@ object CollectionActions {
         return@start
     }
 
-    val renameCollection: CommandCallback = start@ { state, _ ->
+    val renameCollection: CommandCallback = start@ { state, (name) ->
         // prelim checks
         if (!defaultChecks(state, "rename")) { return@start }
 
         val originalName = state.collection!!.name
-        val newName = getInput("Collection Name: ", 64)
         val renameStatement = Database.connection.prepareStatement(
             """
                 UPDATE collection
@@ -196,12 +194,12 @@ object CollectionActions {
                 RETURNING *
             """.trimIndent()
         )
-        renameStatement.setString(1, newName)
+        renameStatement.setString(1, name)
         renameStatement.setInt(2, state.collection!!.id)
 
         val (_, renameResult) = Database.runQuery(renameStatement, Collection::class)
         state.collection = renameResult.first() as Collection
-        println("Collection $originalName renamed to $newName")
+        println("Collection $originalName renamed to $name")
     }
 
     val addToCollection: CommandCallback = start@ { state, (id) ->

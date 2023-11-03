@@ -57,18 +57,20 @@ fun main(args: Array<String>) {
         // Collection Commands
         Command("collection", "list", listOf(), CollectionActions.listCollections),
         Command("collection", "books", listOf { it.toIntOrNull() != null }, CollectionActions.booksInCollection),
-        Command("collection", "create", listOf(), CollectionActions.createCollection),
+        Command("collection", "create", listOf { it.isNotEmpty() && it.length <= 64 }, CollectionActions.createCollection),
         Command("collection", "enter", listOf { it.toIntOrNull() != null }, CollectionActions.enterCollection),
-        Command("collection", "rename", listOf(), CollectionActions.renameCollection),
+        Command("collection", "rename", listOf { it.isNotEmpty() && it.length <= 64 }, CollectionActions.renameCollection),
         Command("collection", "add", listOf { it.toIntOrNull() != null }, CollectionActions.addToCollection),
         Command("collection", "remove", listOf { it.toIntOrNull() != null }, CollectionActions.removeFromCollection),
         Command("collection", "delete", listOf(), CollectionActions.deleteCollection),
         Command("collection", "exit", listOf(), CollectionActions.exitCollection),
         // Book Commands
-        Command("book", "enter", listOf(
-//            { },
-//            {  },
-//            { it.isNotEmpty() && (it == "asc" || it == "desc") }
+        Command("book", "search", listOf(
+            { it == "name" || it == "rel_date" ||
+                    it == "authors" || it == "publisher" || it == "genre" },
+            alwaysTrueValidator,
+            { it == "name" || it == "publisher" || it == "genre" || it == "rel_date" },
+            { it == "asc" || it == "desc" }
         ), BookActions.listBooks),
         Command("book", "enter", listOf { it.toIntOrNull() != null }, BookActions.enterBook),
         Command("book", "read", listOf(alwaysTrueValidator), BookActions.bookStartReading),
