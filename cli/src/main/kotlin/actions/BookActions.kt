@@ -39,10 +39,30 @@ object BookActions {
         //check what they searched by
         var searchQueryBuilder =
                 """
-                    SELECT title, page_length, a.audience_name
+                    SELECT b.title, 
+                        (
+                            SELECT c.name 
+                            FROM authors a
+                            INNER JOIN contributor c
+                            ON a.contributor_id = c.contributor_id
+                            WHERE a.book_id = b.book_id
+                        ) as computed1,
+                        (
+                            SELECT c.name 
+                            FROM publishes p
+                            INNER JOIN contributor c
+                            ON p.contributor_id = c.contributor_id
+                            WHERE p.book_id = b.book_id 
+                        ) as computed2, 
+                        b.page_length, 
+                        aud.audience_name
                     FROM book b 
-                    LEFT JOIN audience a 
-                        ON a.audience_id = b.audience_id
+                    LEFT JOIN audience aud
+                        ON aud.audience_id = b.audience_id
+                    INNER JOIN publishes pub
+                        ON b.book_id = pub.book_id
+                    INNER JOIN contributor publisher
+                        ON publisher.contributor_id = pub.contributor_id
                     WHERE $searchCriteria LIKE '%$searchValue%'
                 """.trimIndent()
 
@@ -64,7 +84,12 @@ object BookActions {
 
         val bookExistsQuery = Database.connection.prepareStatement(searchQueryBuilder)
 
-        val (_, bookExistsResult) = Database.runQuery(bookExistsQuery, Book::class, Audience::class)
+        val (_, bookExistsResult) = Database.runQuery(
+                bookExistsQuery,
+                Book::class,
+                Audience::class,
+                Computed::class
+        )
         if (bookExistsResult.isEmpty()) {
             println("No results found")
             return@start
@@ -77,10 +102,11 @@ object BookActions {
             bookExistsResult.map {
                 val asBook = it as Book
                 val asAudience = it as Audience
+                val asComputed = it as Computed
                 this.row(
                         asBook.title,
-                        //asComputed.computed1,
-                        //asComputed.computed2,
+                        asComputed.computed1,
+                        asComputed.computed2,
                         asBook.pageLength,
                         asAudience.name,
                         //asComputed.computed3
