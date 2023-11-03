@@ -66,11 +66,12 @@ fun main(args: Array<String>) {
         Command("collection", "exit", listOf(), CollectionActions.exitCollection),
         // Book Commands
         Command("book", "search", listOf(
-            { it == "name" || it == "rel_date" ||
-                    it == "authors" || it == "publisher" || it == "genre" },
+            { it == "name" || it == "rel_date_lt" ||
+                    it == "rel_date_gt" || it == "authors" ||
+                    it == "publisher" || it == "genre" },
             alwaysTrueValidator,
-            { it == "name" || it == "publisher" || it == "genre" || it == "rel_date" },
-            { it == "asc" || it == "desc" }
+            { it == "name" || it == "publisher" || it == "genre" || it == "rel_year" || it == "none" },
+            { it == "asc" || it == "dsc" || it == "none" }
         ), BookActions.listBooks),
         Command("book", "enter", listOf { it.toIntOrNull() != null }, BookActions.enterBook),
         Command("book", "read", listOf(alwaysTrueValidator), BookActions.bookStartReading),

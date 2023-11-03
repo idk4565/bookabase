@@ -23,98 +23,234 @@ object BookActions {
 
     private val statusPath = Path(System.getProperty("user.dir"), "status.json")
 
-    val listBooks: CommandCallback = start@{ state, (searchCriteria, searchValue, sortCriteria, sortOrder) ->
-        if (state.user == null) {
-            println("You must be logged in to search books!")
-            return@start
-        }
-
-        /*
-        Users will be able to search for books by name, release date, authors, publisher, or
-        genre. The resulting list of books must show the book’s name, the authors, the pub-
-        lisher, the length, audience and the ratings. The list must be sorted alphabetically
-        (ascending) by book’s name and release date. Users can sort the resulting list: book
-        name, publisher, genre, and released year (ascending and descending)
-         */
-        //check what they searched by
-        var searchQueryBuilder =
+    val listBooks: CommandCallback = start@{ state, (searchCriteria, searchValue, orderCriteria, orderType) ->
+        val innerQuery = when (searchCriteria) {
+            "name" -> {
                 """
-                    SELECT b.title, 
-                        (
-                            SELECT c.name 
-                            FROM authors a
-                            INNER JOIN contributor c
-                            ON a.contributor_id = c.contributor_id
-                            WHERE a.book_id = b.book_id
-                        ) as computed1,
-                        (
-                            SELECT c.name 
-                            FROM publishes p
-                            INNER JOIN contributor c
-                            ON p.contributor_id = c.contributor_id
-                            WHERE p.book_id = b.book_id 
-                        ) as computed2, 
-                        b.page_length, 
-                        aud.audience_name
-                    FROM book b 
-                    LEFT JOIN audience aud
-                        ON aud.audience_id = b.audience_id
-                    INNER JOIN publishes pub
-                        ON b.book_id = pub.book_id
-                    INNER JOIN contributor publisher
-                        ON publisher.contributor_id = pub.contributor_id
-                    WHERE $searchCriteria LIKE '%$searchValue%'
-                """.trimIndent()
+                        SELECT
+                            b.book_id,
+                            b.title,
+                            array_to_string(ARRAY(SELECT c.name
+                                                  FROM publishes p
+                                                  INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                                  WHERE p.book_id = b.book_id
+                                                  ORDER BY c.name), ', ') as computed3,
+                            (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+                            (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
+                            b.page_length,
+                            b.release_date
+                        FROM book b
+                        WHERE LOWER(b.title) LIKE LOWER(?)
+                        ORDER BY b.title ASC, b.release_date ASC
+                    """.trimIndent()
+            }
 
-        // check if they wanted to sort
-        searchQueryBuilder += if (sortCriteria == "") {
-            " ORDER BY title, release date"
-        }
-        else {
-            " ORDER BY $sortCriteria"
+            "rel_date_gt" -> {
+                """
+                        SELECT
+                            b.book_id,
+                            b.title,
+                            array_to_string(ARRAY(SELECT c.name
+                                                  FROM publishes p
+                                                  INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                                  WHERE p.book_id = b.book_id
+                                                  ORDER BY c.name), ', ') as computed3,
+                            (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+                            (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
+                            b.page_length,
+                            b.release_date
+                        FROM book b
+                        WHERE ? <= b.release_date
+                        ORDER BY b.title ASC, b.release_date ASC
+                    """.trimIndent()
+            }
+
+            "rel_date_lt" -> {
+                """
+                        SELECT
+                            b.book_id,
+                            b.title,
+                            array_to_string(ARRAY(SELECT c.name
+                                                  FROM publishes p
+                                                  INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                                  WHERE p.book_id = b.book_id
+                                                  ORDER BY c.name), ', ') as computed3,
+                            (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+                            (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
+                            b.page_length,
+                            b.release_date
+                        FROM book b
+                        WHERE ? >= b.release_date
+                        ORDER BY b.title ASC, b.release_date ASC
+                    """.trimIndent()
+            }
+
+            "authors" -> {
+                """
+                        SELECT
+                            b.book_id,
+                            b.title,
+                            array_to_string(ARRAY(SELECT c.name
+                                                  FROM publishes p
+                                                  INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                                  WHERE p.book_id = b.book_id
+                                                  ORDER BY c.name), ', ') as computed3,
+                            (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+                            (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
+                            b.page_length,
+                            b.release_date
+                        FROM book b
+                        INNER JOIN authors a
+                            ON a.book_id = b.book_id
+                        INNER JOIN contributor c
+                            ON c.contributor_id = a.contributor_id
+                        WHERE LOWER(c.name) LIKE LOWER(?)
+                        ORDER BY b.title ASC, b.release_date ASC
+                    """.trimIndent()
+            }
+
+            "publisher" -> {
+                """
+                        SELECT
+                            b.book_id,
+                            b.title,
+                            array_to_string(ARRAY(SELECT c.name
+                                                  FROM publishes p
+                                                  INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                                  WHERE p.book_id = b.book_id
+                                                  ORDER BY c.name), ', ') as computed3,
+                            (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+                            (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
+                            b.page_length,
+                            b.release_date
+                        FROM book b
+                        INNER JOIN publishes p
+                            ON p.book_id = b.book_id
+                        INNER JOIN contributor c
+                            ON c.contributor_id = p.contributor_id
+                        WHERE LOWER(c.name) LIKE LOWER(?)
+                        ORDER BY b.title ASC, b.release_date ASC
+                    """.trimIndent()
+            }
+
+            else -> {
+                """
+                        SELECT
+                            b.book_id,
+                            b.title,
+                            array_to_string(ARRAY(SELECT c.name
+                                                  FROM publishes p
+                                                  INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                                  WHERE p.book_id = b.book_id
+                                                  ORDER BY c.name), ', ') as computed3,
+                            (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+                            g.genre_name,
+                            b.page_length,
+                            b.release_date
+                        FROM book b
+                        INNER JOIN genre g
+                            ON b.genre_id = g.genre_id
+                        WHERE LOWER(g.genre_name) LIKE LOWER(?)
+                        ORDER BY b.title ASC, b.release_date ASC
+                    """.trimIndent()
+            }
         }
 
-        // check for asc vs dsc
-        searchQueryBuilder += if (sortOrder == "") {
-            " ASC"
-        }
-        else {
-            " $sortOrder"
+        val orderByStatement =  when (orderCriteria) {
+            "name" -> "title"
+            "publisher" -> "computed3"
+            "genre" -> when (searchCriteria) {
+                "genre" -> "genre_name"
+                else -> "computed5"
+            }
+            "rel_year" -> "release_date"
+            else -> ""
         }
 
-        val bookExistsQuery = Database.connection.prepareStatement(searchQueryBuilder)
+        val orderByDirection = when (orderType) {
+            "asc" -> "ASC"
+            "dsc" -> "DESC"
+            else -> ""
+        }
 
-        val (_, bookExistsResult) = Database.runQuery(
-                bookExistsQuery,
-                Book::class,
-                Audience::class,
-                Computed::class
+        val completeOrderByStatement = if (orderByStatement.isNotEmpty() && orderByDirection.isNotEmpty()) {
+            "ORDER BY " + when (orderByStatement) {
+                "release_date" -> "EXTRACT('YEAR' FROM t.release_date)"
+                else -> orderByStatement
+            } + " $orderByDirection"
+        } else {
+            ""
+        }
+
+        val preparedQuery = Database.connection.prepareStatement(
+            """
+                SELECT *
+                FROM ( $innerQuery ) t
+                $completeOrderByStatement
+            """.trimIndent()
         )
-        if (bookExistsResult.isEmpty()) {
-            println("No results found")
-            return@start
-        }
 
-        // else if results found
+        // set val
+        when (searchCriteria) {
+            "name" -> preparedQuery.setString(1, "$searchValue%")
+            "rel_date_gt" -> preparedQuery.setDate(1, java.sql.Date.valueOf(searchValue))
+            "rel_date_lt" -> preparedQuery.setDate(1, java.sql.Date.valueOf(searchValue))
+            "authors" -> preparedQuery.setString(1, "$searchValue%")
+            "publisher" -> preparedQuery.setString(1, "$searchValue%")
+            else -> preparedQuery.setString(1, "$searchValue%")
+        }
+        val (_, searchResult) = Database.runQuery(
+            preparedQuery, *when (searchCriteria) {
+                "name" -> arrayOf(Book::class, Computed::class)
+                "rel_date_lt" -> arrayOf(Book::class, Computed::class)
+                "rel_date_gt" -> arrayOf(Book::class, Computed::class)
+                "authors" -> arrayOf(Book::class, Computed::class, Contributor::class)
+                "publisher" -> arrayOf(Book::class, Computed::class, Contributor::class)
+                else -> arrayOf(Book::class, Computed::class, Genre::class)
+            }
+        )
+
         println()
         table {
-            header("Title", "Authors", "Publisher", "Page Length", "Audience", "Ratings")
-            bookExistsResult.map {
+            header("ID", "Title", "Publisher", "Audience", "Genre", "Page Length", "Release Date")
+            searchResult.forEach {
                 val asBook = it as Book
-                val asAudience = it as Audience
                 val asComputed = it as Computed
-                this.row(
-                        asBook.title,
-                        asComputed.computed1,
-                        asComputed.computed2,
-                        asBook.pageLength,
-                        asAudience.name,
-                        //asComputed.computed3
-                )
+
+                when (searchCriteria) {
+                    "genre" -> {
+                        this.row(
+                            asBook.id,
+                            asBook.title,
+                            asComputed.computed3,
+                            asComputed.computed4,
+                            (it as Genre).name,
+                            asBook.pageLength,
+                            asBook.releaseDate
+                        )
+                    }
+
+                    else -> {
+                        this.row(
+                            asBook.id,
+                            asBook.title,
+                            asComputed.computed3,
+                            asComputed.computed4,
+                            asComputed.computed5,
+                            asBook.pageLength,
+                            asBook.releaseDate
+                        )
+                    }
+                }
             }
 
             hints {
                 alignment("Title", Table.Hints.Alignment.LEFT)
+                alignment("Publisher", Table.Hints.Alignment.LEFT)
+                alignment("Audience", Table.Hints.Alignment.LEFT)
+                alignment("Genre", Table.Hints.Alignment.LEFT)
+                alignment("Release Date", Table.Hints.Alignment.LEFT)
+
                 borderStyle = Table.BorderStyle.SINGLE_LINE
             }
         }.print(System.out)
@@ -217,9 +353,11 @@ object BookActions {
             val (_, getBookResult) = Database.runQuery(getBookQuery, Book::class)
             if (getBookResult.isNotEmpty()) {
                 println(
-                    "You cannot read two books at the same time! You are currently " +
-                            "reading ${(getBookResult.first() as Book).title}, which you started " +
-                            "on ${Date.from(Instant.ofEpochMilli(statusData[state.user!!.id]!!.startTime))}."
+                    "You cannot read two books at the same time! You are currently " + "reading ${(getBookResult.first() as Book).title}, which you started " + "on ${
+                        Date.from(
+                            Instant.ofEpochMilli(statusData[state.user!!.id]!!.startTime)
+                        )
+                    }."
                 )
                 return@start
             } else {
@@ -231,16 +369,15 @@ object BookActions {
         var startPage: String? = null
         while (startPage == null) {
             startPage = getInput("Please enter start page: ", 10)
-            if (!startPage.isNullOrEmpty() &&
-                startPage.toIntOrNull() != null &&
-                startPage.toInt() < book.pageLength) break
+            if (!startPage.isNullOrEmpty() && startPage.toIntOrNull() != null && startPage.toInt() < book.pageLength) break
         }
 
         val startTime = Instant.now().toEpochMilli()
         statusData[state.user!!.id] = BookReadData(book.id, startTime, startPage!!.toInt())
         statusPath.writeText(Json.encodeToString(statusData))
-        println("Started reading '${book.title}' from page " +
-                "$startPage at ${Date.from(Instant.ofEpochMilli(startTime))}!")
+        println(
+            "Started reading '${book.title}' from page " + "$startPage at ${Date.from(Instant.ofEpochMilli(startTime))}!"
+        )
     }
 
     val bookStopReading: CommandCallback = start@{ state, _ ->
@@ -280,14 +417,13 @@ object BookActions {
         val endTime = Instant.now().toEpochMilli()
         val startPage = statusData[state.user!!.id]!!.startPage
 
-        println("You are currently reading '${book.title}' starting from page $startPage. " +
-                "The book has a length of ${book.pageLength}!")
+        println(
+            "You are currently reading '${book.title}' starting from page $startPage. " + "The book has a length of ${book.pageLength}!"
+        )
         var endPage: String? = null
         while (endPage == null) {
             endPage = getInput("Please enter end page: ", 10)
-            if (!endPage.isNullOrEmpty() &&
-                endPage.toIntOrNull() != null &&
-                endPage.toInt() <= book.pageLength) break
+            if (!endPage.isNullOrEmpty() && endPage.toIntOrNull() != null && endPage.toInt() <= book.pageLength) break
         }
 
         // Insert into rads
@@ -309,12 +445,13 @@ object BookActions {
             println("Error registering read with the database!")
             return@start
         } else {
-            println("Successfully logged reading session into the database. Session Info:\n" +
-                    "  Book: ${book.title}\n" +
-                    "  Start Time: ${Timestamp.from(Instant.ofEpochMilli(startTime))}\n" +
-                    "  End Time: ${Timestamp.from(Instant.ofEpochMilli(endTime))}\n" +
-                    "  Start Page: $startPage\n" +
-                    "  End Page: $endPage")
+            println(
+                "Successfully logged reading session into the database. Session Info:\n" + "  Book: ${book.title}\n" + "  Start Time: ${
+                    Timestamp.from(
+                        Instant.ofEpochMilli(startTime)
+                    )
+                }\n" + "  End Time: ${Timestamp.from(Instant.ofEpochMilli(endTime))}\n" + "  Start Page: $startPage\n" + "  End Page: $endPage"
+            )
         }
 
         statusData.remove(state.user!!.id)

@@ -33,11 +33,6 @@ interface Computed {
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("computedComputed5")
     @set:JvmName("setComputedComputed5")
-    var computed5: java.sql.Date
+    var computed5: String
 
-    @Column("computed6")
-    @Suppress("INAPPLICABLE_JVM_NAME")
-    @get:JvmName("computedComputed6")
-    @set:JvmName("setComputedComputed6")
-    var computed6: java.sql.Date
 }
