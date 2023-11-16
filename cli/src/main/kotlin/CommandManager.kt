@@ -1,6 +1,4 @@
 import utils.State
-import kotlin.reflect.KClass
-import kotlin.reflect.safeCast
 
 typealias ArgumentValidator = (String) -> Boolean
 typealias CommandCallback = (State, List<String>) -> Unit
@@ -24,10 +22,16 @@ class CommandManager(var state: State, vararg commands: Command) {
     private val helpMessage: String = """
     Available Commands:
       user
-        enter [name]
-          follow [email]
-          unfollow [email]
-        exit
+        enter [email]
+            search [email]
+            follow [email]
+            unfollow [email]
+            TODO: collections
+            TODO: following
+            TODO: followers
+            TODO: top10
+            TODO: recommend [recent | followers | month | for_me]
+            exit
       collection
         list
         enter [name]
@@ -35,13 +39,14 @@ class CommandManager(var state: State, vararg commands: Command) {
           add [book_id]
           remove [book_id]
           delete
-        exit
+          exit
       book
-        list [rel_date | authors | publishers | length | audience | rating]=value sort=[rel_date | authors | publishers | length | audience | rating] asc | desc
+        search [rel_date | authors | publishers | length | audience | rating] [value] sort=[rel_date | authors | publishers | length | audience | rating] [asc | desc]
         enter [id | random] 
           rate [rating]
           read [start_page] [end_page] [start_time] [end_time]
-        exit
+          stop
+          exit
     """
 
     fun parseCommand(input: String) {

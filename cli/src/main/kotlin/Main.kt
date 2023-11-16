@@ -7,7 +7,6 @@ import models.Reader
 import org.apache.commons.validator.routines.EmailValidator
 import utils.Database
 import utils.State
-import kotlin.io.path.Path
 
 /**
  *     Available Commands:
