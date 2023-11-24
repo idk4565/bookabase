@@ -21,35 +21,40 @@ class CommandManager(var state: State, vararg commands: Command) {
 
     private val helpMessage: String = """
     Available Commands:
-      user
-        enter [email]
-            search [email]
-            follow [email]
-            unfollow [email]
-            TODO: collections
-            TODO: following
-            TODO: followers
-            TODO: top10
-            TODO: recommend [recent | followers | month | for_me]
-            exit
-      collection
-        list
-        enter [name]
-          update [new_name]
-          add [book_id]
-          remove [book_id]
-          delete
-          exit
-      book
-        search [rel_date | authors | publishers | length | audience | rating] [value] sort=[rel_date | authors | publishers | length | audience | rating] [asc | desc]
-        enter [id | random] 
-          rate [rating]
-          read [start_page] [end_page] [start_time] [end_time]
-          stop
-          exit
-    """
+        user
+            enter [username]
+                search [username]
+                follow [username]
+                unfollow [username]
+                TODO Justin: collections
+                TODO Justin: following
+                TODO Justin: followers
+                TODO Justin: top10
+                TODO Sid: recommend [recent | followers | month | for_me]
+                exit
+        collection
+            list
+            create "[name]"
+            enter [id]
+                add [book_id]
+                remove [book_id]
+                rename "[new_name]"
+                exit
+                delete
+        book
+            search [name | authors | publishers | genre | rel_date_gt | rel_date_lt] [value] (sort=)[name | publisher | genre | rel_year | none] [asc | desc | none]
+            read [id | random]
+                stop
+            enter [id] 
+                rate [rating]
+                exit
+    """.trimIndent()
 
     fun parseCommand(input: String) {
+        if (!input.contains(' ')) {
+            println(helpMessage)
+            return
+        }
         var key = input.substring(0, input.indexOfFirst { it == ' ' })
         var mutableInput = input.substring(input.indexOfFirst { it == ' ' } + 1)
         if (!commands.containsKey(key)) {
@@ -93,12 +98,12 @@ class CommandManager(var state: State, vararg commands: Command) {
         }
 
         // validate each item
-        for (i in arguments.indices) {
-            if (!command.arguments[i].invoke(arguments[i])) {
-                println("Argument '${arguments[i]}' failed validation!")
-                return
-            }
-        }
+//        for (i in arguments.indices) {
+//            if (!command.arguments[i].invoke(arguments[i])) {
+//                println("Argument '${arguments[i]}' failed validation!")
+//                return
+//            }
+//        }
 
         command.callback(state, arguments)
     }

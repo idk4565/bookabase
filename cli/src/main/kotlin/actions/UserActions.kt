@@ -11,7 +11,7 @@ import java.sql.Timestamp
 import java.time.Instant
 
 object UserActions {
-    val enterUser: CommandCallback = start@ { state, (email) ->
+    val enterUser: CommandCallback = start@ { state, (username) ->
         if (state.user != null) {
             println("There is already a logged in user.")
             return@start
@@ -21,10 +21,10 @@ object UserActions {
             """
                 SELECT *
                 FROM reader
-                WHERE email = ?
+                WHERE username = ?
             """.trimIndent()
         )
-        statement.setString(1, email)
+        statement.setString(1, username)
         val (_, selectResult) = Database.runQuery(statement, Reader::class)
 
         // if the user exists
@@ -65,7 +65,7 @@ object UserActions {
                 "To get started, please answer the following questions: ")
         val firstName = getInput("First Name: ", 48)
         val lastName = getInput("Last Name: ", 48)
-        val username = getInput("Username: ", 12)
+        val email = getInput("Email: ", 64)
         val password = getInput("Password: ", 48)
 
         // insert new user
@@ -88,39 +88,39 @@ object UserActions {
         state.user = (insertResult.first() as Reader)
     }
 
-    val searchUsers: CommandCallback = start@ { state, (email) ->
+    val searchUsers: CommandCallback = start@ { state, (username) ->
         if (state.user == null) {
             println("You must be logged in to search users!")
             return@start
         }
 
-        // Get users with like email
+        // Get users with like username
         val searchUserQuery = Database.connection.prepareStatement(
             """
-                SELECT firstname, lastname, email
+                SELECT firstname, lastname, username
                 FROM reader
-                WHERE LOWER(email) LIKE LOWER(?)
+                WHERE LOWER(username) LIKE LOWER(?)
             """.trimIndent()
         )
-        searchUserQuery.setString(1, "$email%")
+        searchUserQuery.setString(1, "$username%")
         val (_, searchUserResults) = Database.runQuery(searchUserQuery, Reader::class)
         if (searchUserResults.isEmpty()) {
-            println("No users found with that email!")
+            println("No users found with that username!")
             return@start
         }
 
         println()
         table {
-            header("First Name", "Last Name", "Email")
+            header("First Name", "Last Name", "Username")
             searchUserResults.forEach {
                 val asReader = it as Reader
-                this.row(asReader.firstName, asReader.lastName, asReader.email)
+                this.row(asReader.firstName, asReader.lastName, asReader.username)
             }
 
             hints {
                 alignment("First Name", Table.Hints.Alignment.LEFT)
                 alignment("Last Name", Table.Hints.Alignment.LEFT)
-                alignment("Email", Table.Hints.Alignment.LEFT)
+                alignment("Username", Table.Hints.Alignment.LEFT)
                 borderStyle = Table.BorderStyle.SINGLE_LINE
             }
         }.print(System.out)
@@ -132,8 +132,8 @@ object UserActions {
         state.collection = null
     }
 
-    val followUser: CommandCallback = start@ { state, (email) ->
-        val emailAsString = email
+    val followUser: CommandCallback = start@ { state, (username) ->
+        val usernameAsString = username
         if (state.user == null) {
             println("You must be logged in to follow a user!")
             return@start
@@ -144,10 +144,10 @@ object UserActions {
             """
                 SELECT *
                 FROM reader
-                WHERE email = ?
+                WHERE username = ?
             """.trimIndent()
         )
-        userExistsQuery.setString(1, emailAsString)
+        userExistsQuery.setString(1, usernameAsString)
         val (_, existsResult) = Database.runQuery(userExistsQuery, Reader::class)
         if (existsResult.isEmpty()) {
             println("The user you want to follow does not exist!")
@@ -167,7 +167,7 @@ object UserActions {
         alreadyFollowQuery.setInt(2, followUser.id)
         val (_, alreadyFollowResult) = Database.runQuery(alreadyFollowQuery, Follows::class)
         if (alreadyFollowResult.isNotEmpty()) {
-            println("You already follow $emailAsString!");
+            println("You already follow $usernameAsString!");
             return@start
         }
 
@@ -184,14 +184,14 @@ object UserActions {
         val (followStatus, _) = Database.runQuery(followQuery, Follows::class)
 
         if (followStatus == Database.QueryStatus.SUCCESS) {
-            println("You have successfully followed ${followUser.email}")
+            println("You have successfully followed ${followUser.username}")
         } else {
-            println("Unable to follow ${followUser.email}")
+            println("Unable to follow ${followUser.username}")
         }
     }
 
-    val unfollowUser: CommandCallback = start@ { state, (email) ->
-        val emailAsString = email
+    val unfollowUser: CommandCallback = start@ { state, (username) ->
+        val usernameAsString = username
         if (state.user == null) {
             println("You must be logged in to unfollow a user!")
             return@start
@@ -202,10 +202,10 @@ object UserActions {
             """
                 SELECT *
                 FROM reader
-                WHERE email = ?
+                WHERE username = ?
             """.trimIndent()
         )
-        userExistsQuery.setString(1, emailAsString)
+        userExistsQuery.setString(1, usernameAsString)
         val (_, existsResult) = Database.runQuery(userExistsQuery, Reader::class)
         if (existsResult.isEmpty()) {
             println("The user you want to unfollow does not exist!")
@@ -225,7 +225,7 @@ object UserActions {
         notFollowedQuery.setInt(2, unfollowUser.id)
         val (_, alreadyFollowResult) = Database.runQuery(notFollowedQuery, Follows::class)
         if (alreadyFollowResult.isEmpty()) {
-            println("You are not following $emailAsString!");
+            println("You are not following $usernameAsString!");
             return@start
         }
 
@@ -242,9 +242,9 @@ object UserActions {
         val (unfollowStatus, _) = Database.runQuery(unfollowQuery, Follows::class)
 
         if (unfollowStatus == Database.QueryStatus.SUCCESS) {
-            println("You have successfully unfollowed ${unfollowUser.email}")
+            println("You have successfully unfollowed ${unfollowUser.username}")
         } else {
-            println("Unable to unfollow ${unfollowUser.email}")
+            println("Unable to unfollow ${unfollowUser.username}")
         }
     }
 
