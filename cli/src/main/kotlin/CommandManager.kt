@@ -26,14 +26,15 @@ class CommandManager(var state: State, vararg commands: Command) {
                 search [username]
                 follow [username]
                 unfollow [username]
-                TODO Justin: collections
-                TODO Justin: following
-                TODO Justin: followers
-                TODO Justin: top10
-                TODO Sid: recommend [recent | followers | month | for_me]
+                collections
+                following
+                followers
+                top10
+                recommend [recent | followers | month | for_me]
                 exit
         collection
             list
+            books [id]
             create "[name]"
             enter [id]
                 add [book_id]
@@ -42,7 +43,7 @@ class CommandManager(var state: State, vararg commands: Command) {
                 exit
                 delete
         book
-            search [name | authors | publishers | genre | rel_date_gt | rel_date_lt] [value] (sort=)[name | publisher | genre | rel_year | none] [asc | desc | none]
+            search [name | authors | publisher | genre | rel_date_gt | rel_date_lt] [value] (sort=)[name | publisher | genre | rel_year | none] [asc | desc | none]
             read [id | random]
                 stop
             enter [id] 
@@ -98,12 +99,12 @@ class CommandManager(var state: State, vararg commands: Command) {
         }
 
         // validate each item
-//        for (i in arguments.indices) {
-//            if (!command.arguments[i].invoke(arguments[i])) {
-//                println("Argument '${arguments[i]}' failed validation!")
-//                return
-//            }
-//        }
+        for (i in arguments.indices) {
+            if (!command.arguments[i].invoke(arguments[i])) {
+                println("Argument '${arguments[i]}' failed validation!")
+                return
+            }
+        }
 
         command.callback(state, arguments)
     }

@@ -4,32 +4,40 @@ import actions.UserActions
 import models.Book
 import models.Collection
 import models.Reader
-import org.apache.commons.validator.routines.EmailValidator
 import utils.Database
 import utils.State
 
 /**
  *     Available Commands:
- *       user
- *         list
- *         enter [name]
- *           follow [email]
- *           unfollow [email]
- *         exit
- *       collection
- *         list
- *         enter [name]
- *           update [new_name]
- *           add [book_id]
- *           remove [book_id]
- *           delete
- *         exit
- *       book
- *         list [rel_date | authors | publishers | length | audience | rating]=value sort=[rel_date | authors | publishers | length | audience | rating] asc | desc
- *         enter [id | random]
- *           rate [rating]
- *           read [start_page] [end_page] [start_time] [end_time]
- *         exit
+ *         user
+ *             enter [username]
+ *                 search [username]
+ *                 follow [username]
+ *                 unfollow [username]
+ *                 TODO Justin: collections
+ *                 TODO Justin: following
+ *                 TODO Justin: followers
+ *                 TODO Justin: top10
+ *                 TODO Sid: recommend [recent | followers | month | for_me]
+ *                 exit
+ *         collection
+ *             list
+ *             book [id]
+ *             create "[name]"
+ *             enter [id]
+ *                 add [book_id]
+ *                 remove [book_id]
+ *                 rename "[new_name]"
+ *                 exit
+ *                 delete
+ *         book
+ *             search [name | authors | publishers | genre | rel_date_gt | rel_date_lt] [value] (sort=)[name | publisher | genre | rel_year | none] [asc | desc | none]
+ *             read [id | random]
+ *                 stop
+ *             enter [id]
+ *                 rate [rating]
+ *                 exit
+ *
  */
 
 val alwaysTrueValidator: ArgumentValidator = { _ -> true }
@@ -49,11 +57,11 @@ fun main(args: Array<String>) {
             override var book: Book? = null
         },
         // User Commands
-        Command("user", "enter", listOf { it.isNotEmpty() && it.length <= 64 }, UserActions.enterUser),
+        Command("user", "enter", listOf { it.isNotEmpty() && it.length <= 12 }, UserActions.enterUser),
         Command("user", "search", listOf { it.isNotEmpty() && it.length <= 64 }, UserActions.searchUsers),
         Command("user", "exit", listOf(), UserActions.exitUser),
-        Command("user", "follow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.followUser),
-        Command("user", "unfollow", listOf { EmailValidator.getInstance().isValid(it) }, UserActions.unfollowUser),
+        Command("user", "follow", listOf { it.isNotEmpty() && it.length <= 12 }, UserActions.followUser),
+        Command("user", "unfollow", listOf { it.isNotEmpty() && it.length <= 12 }, UserActions.unfollowUser),
         // Collection Commands
         Command("collection", "list", listOf(), CollectionActions.listCollections),
         Command("collection", "books", listOf { it.toIntOrNull() != null }, CollectionActions.booksInCollection),
