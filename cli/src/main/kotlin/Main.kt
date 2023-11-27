@@ -18,7 +18,6 @@ import utils.State
  *                 TODO Justin: following
  *                 TODO Justin: followers
  *                 TODO Justin: top10
- *                 TODO Sid: recommend [recent | followers | month | for_me]
  *                 exit
  *         collection
  *             list
@@ -37,6 +36,7 @@ import utils.State
  *             enter [id]
  *                 rate [rating]
  *                 exit
+ *             TODO Sid: recommend [recent | followers | month | for_me]
  *
  */
 
@@ -85,6 +85,9 @@ fun main(args: Array<String>) {
             { it == "name" || it == "publisher" || it == "genre" || it == "rel_year" || it == "none" },
             { it == "asc" || it == "dsc" || it == "none" }
         ), BookActions.listBooks),
+        Command("book", "recommend", listOf {
+            it == "recent" || it == "followers" || it == "month" || it == "for_me"
+        }, BookActions.recommendBook),
         Command("book", "enter", listOf { it.toIntOrNull() != null }, BookActions.enterBook),
         Command("book", "read", listOf(alwaysTrueValidator), BookActions.bookStartReading),
         Command("book", "stop", listOf(), BookActions.bookStopReading),
@@ -97,7 +100,13 @@ fun main(args: Array<String>) {
         print("bookabase> ")
         val command: String = readln()
         if (command.isEmpty()) { continue }
-        if (command == "exit") { break }
+        if (command == "exit") {
+            if (commandManager.state.collection != null) { CollectionActions.exitCollection(commandManager.state, listOf()); }
+            if (commandManager.state.book != null) { BookActions.exitBook(commandManager.state, listOf()); }
+            if (commandManager.state.user != null) { UserActions.exitUser(commandManager.state, listOf()); }
+
+            break
+        }
 
         commandManager.parseCommand(command)
     }

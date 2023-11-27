@@ -7,7 +7,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import models.*
-import models.Collection
 import utils.Database
 import java.io.File
 import java.sql.Timestamp
@@ -250,6 +249,141 @@ object BookActions {
                         )
                     }
                 }
+            }
+
+            hints {
+                alignment("Title", Table.Hints.Alignment.LEFT)
+                alignment("Publisher", Table.Hints.Alignment.LEFT)
+                alignment("Audience", Table.Hints.Alignment.LEFT)
+                alignment("Genre", Table.Hints.Alignment.LEFT)
+                alignment("Release Date", Table.Hints.Alignment.LEFT)
+
+                borderStyle = Table.BorderStyle.SINGLE_LINE
+            }
+        }.print(System.out)
+    }
+
+    val recommendBook: CommandCallback = start@ { state, (type) ->
+        if (state.user == null) {
+            println("You must be logged in to get a recommended book!")
+            return@start
+        }
+
+        val recommendationQuery = Database.connection.prepareStatement(when (type) {
+            "recent" -> """
+                SELECT b.book_id, COUNT(*)::int as computed1 
+                FROM reads r
+                INNER JOIN book b
+                    ON b.book_id = r.book_id
+                WHERE r.start_time >= (NOW() - INTERVAL '90 DAY')
+                GROUP BY b.book_id, b.title
+                ORDER BY COUNT(*) DESC, b.title ASC
+                LIMIT 20;
+            """.trimIndent()
+            "followers" -> """
+                SELECT b.book_id, COUNT(*)::int as computed1 
+                FROM reads r
+                INNER JOIN (SELECT *
+                            FROM follows
+                            WHERE follower_id = ?) f
+                  ON r.reader_id = f.followee_id
+                INNER JOIN book b
+                  ON b.book_id = r.book_id
+                GROUP BY b.book_id, b.title
+                ORDER BY COUNT(*) DESC, b.title ASC
+                LIMIT 20;
+            """.trimIndent()
+            "month" -> """
+                SELECT b.book_id, COUNT(*)::int as computed1 
+                FROM (SELECT *
+                      FROM book
+                      WHERE to_char(release_date, 'YYYY-MM') = to_char(now(), 'YYYY-MM')) b
+                INNER JOIN reads r
+                  ON r.book_id = b.book_id
+                GROUP BY b.book_id, b.title
+                ORDER BY COUNT(*) DESC, b.title ASC
+                LIMIT 5;
+            """.trimIndent()
+            else -> """
+                SELECT b.book_id, COUNT(*)::int as computed1
+                FROM reads r
+                INNER JOIN book b 
+                  ON b.book_id = r.book_id
+                WHERE r.reader_id != ? 
+                AND b.genre_id IN (SELECT genre_id
+                                   FROM reads r
+                                   INNER JOIN book b 
+                                     ON b.book_id = r.book_id
+                                   WHERE r.reader_id = ?)
+                AND b.title NOT IN (SELECT b.title
+                                    FROM reads r
+                                    INNER JOIN book b
+                                      ON b.book_id = r.book_id
+                                    WHERE r.reader_id = ?)
+                GROUP BY b.book_id, b.title
+                ORDER BY COUNT(*) DESC, b.title ASC
+            """.trimIndent()
+        })
+
+        // set prepared items
+        when (type) {
+            "followers" -> {
+                recommendationQuery.setInt(1, state.user!!.id)
+            }
+            "for_me" -> {
+                recommendationQuery.setInt(1, state.user!!.id)
+                recommendationQuery.setInt(2, state.user!!.id)
+                recommendationQuery.setInt(3, state.user!!.id)
+            }
+            else -> {}
+        }
+
+        // run
+        val (_, recommendationResult) = Database.runQuery(recommendationQuery, Book::class, Computed::class)
+        if (recommendationResult.isEmpty()) {
+            println("No recommendations currently available for type: $type!")
+            return@start
+        }
+
+        // get the books corresponding to the results
+        val matchingBookQuery = Database.connection.prepareStatement("""
+            SELECT
+              b.book_id,
+              b.title,
+              array_to_string(ARRAY(SELECT c.name
+                                    FROM publishes p
+                                    INNER JOIN contributor c ON c.contributor_id = p.contributor_id
+                                    WHERE p.book_id = b.book_id
+                                    ORDER BY c.name), ', ') as computed3,
+              (SELECT audience_name FROM audience WHERE audience_id = b.audience_id) as computed4,
+              (SELECT genre_name FROM genre WHERE genre_id = b.genre_id) as computed5,
+              b.page_length,
+              b.release_date
+            FROM book b
+            WHERE b.book_id in (${recommendationResult.map { '?' }.joinToString(", ")})
+        """.trimIndent())
+        recommendationResult.forEachIndexed { i, v -> matchingBookQuery.setInt(i + 1, (v as Book).id); }
+        val (_, matchingBookResult) = Database.runQuery(matchingBookQuery, Book::class, Computed::class)
+        val mappedBookResults = matchingBookResult.associateBy { (it as Book).id }
+
+        println()
+        table {
+            header("ID", "Title", "Publisher", "Audience", "Genre", "Page Length", "Release Date", "Frequency")
+            recommendationResult.forEach {
+                val value = mappedBookResults[(it as Book).id]!!
+                val asBook = value as Book
+                val asComputed = value as Computed
+
+                this.row(
+                    asBook.id,
+                    asBook.title,
+                    asComputed.computed3,
+                    asComputed.computed4,
+                    asComputed.computed5,
+                    asBook.pageLength,
+                    asBook.releaseDate,
+                    (it as Computed).computed1
+                )
             }
 
             hints {
