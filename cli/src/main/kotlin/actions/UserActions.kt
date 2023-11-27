@@ -1,9 +1,9 @@
 package actions
 
-import Command
 import CommandCallback
 import de.m3y.kformat.Table
 import de.m3y.kformat.table
+import models.Collection
 import models.Follows
 import models.Reader
 import utils.Database
@@ -167,7 +167,7 @@ object UserActions {
         alreadyFollowQuery.setInt(2, followUser.id)
         val (_, alreadyFollowResult) = Database.runQuery(alreadyFollowQuery, Follows::class)
         if (alreadyFollowResult.isNotEmpty()) {
-            println("You already follow $usernameAsString!");
+            println("You already follow $usernameAsString!")
             return@start
         }
 
@@ -225,7 +225,7 @@ object UserActions {
         notFollowedQuery.setInt(2, unfollowUser.id)
         val (_, alreadyFollowResult) = Database.runQuery(notFollowedQuery, Follows::class)
         if (alreadyFollowResult.isEmpty()) {
-            println("You are not following $usernameAsString!");
+            println("You are not following $usernameAsString!")
             return@start
         }
 
@@ -246,6 +246,74 @@ object UserActions {
         } else {
             println("Unable to unfollow ${unfollowUser.username}")
         }
+    }
+
+    val findMyCollectionCount: CommandCallback = start@{ state, _ ->
+        if (state.user == null) {
+            println("You must be logged in to get your collection count!")
+            return@start
+        }
+
+        val collectionCountQuery = Database.connection.prepareStatement(
+            """
+                SELECT COUNT(*)
+                FROM collection
+                WHERE reader_id = ?
+            """.trimIndent()
+        )
+        collectionCountQuery.setInt(1, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(collectionCountQuery, Collection::class)
+        val resultCount = queryResult.first() as Int
+        if (resultCount == 1) println("You have 1 collection")
+        else println("You have $resultCount collections")
+        return@start
+    }
+
+    val findMyFollowingCount: CommandCallback = start@{ state, _ ->
+        if (state.user == null) {
+            println("You must be logged in to get your collection count!")
+            return@start
+        }
+
+        val collectionCountQuery = Database.connection.prepareStatement(
+            """
+                SELECT COUNT(*)
+                FROM follows
+                WHERE follower_id = ?
+            """.trimIndent()
+        )
+        collectionCountQuery.setInt(1, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(collectionCountQuery, Follows::class)
+        val resultCount = queryResult.first() as Int
+        if (resultCount == 1) println("You are following 1 user")
+        else println("You are following $resultCount users")
+        return@start
+    }
+
+    val findMyFollowerCount: CommandCallback = start@{ state, _ ->
+        if (state.user == null) {
+            println("You must be logged in to get your collection count!")
+            return@start
+        }
+
+        val collectionCountQuery = Database.connection.prepareStatement(
+            """
+                SELECT COUNT(*)
+                FROM follows
+                WHERE followee_id = ?
+            """.trimIndent()
+        )
+        collectionCountQuery.setInt(1, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(collectionCountQuery, Follows::class)
+        val resultCount = queryResult.first() as Int
+        if (resultCount == 1) println("You have 1 follower")
+        else println("You have $resultCount followers")
+        return@start
+    }
+
+    val findMyTop10: CommandCallback = start@{ state, _ ->
+        println("Not implemented yet")
+        return@start
     }
 
     private fun getInput(prompt: String, length: Int): String? {
