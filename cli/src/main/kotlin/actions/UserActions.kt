@@ -3,9 +3,8 @@ package actions
 import CommandCallback
 import de.m3y.kformat.Table
 import de.m3y.kformat.table
+import models.*
 import models.Collection
-import models.Follows
-import models.Reader
 import utils.Database
 import java.sql.Timestamp
 import java.time.Instant
@@ -271,19 +270,19 @@ object UserActions {
 
     val findMyFollowingCount: CommandCallback = start@{ state, _ ->
         if (state.user == null) {
-            println("You must be logged in to get your collection count!")
+            println("You must be logged in to get the count of users you follow!")
             return@start
         }
 
-        val collectionCountQuery = Database.connection.prepareStatement(
+        val followingCountQuery = Database.connection.prepareStatement(
             """
                 SELECT COUNT(*)
                 FROM follows
                 WHERE follower_id = ?
             """.trimIndent()
         )
-        collectionCountQuery.setInt(1, state.user!!.id)
-        val (_, queryResult) = Database.runQuery(collectionCountQuery, Follows::class)
+        followingCountQuery.setInt(1, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(followingCountQuery, Follows::class)
         val resultCount = queryResult.first() as Int
         if (resultCount == 1) println("You are following 1 user")
         else println("You are following $resultCount users")
@@ -292,19 +291,19 @@ object UserActions {
 
     val findMyFollowerCount: CommandCallback = start@{ state, _ ->
         if (state.user == null) {
-            println("You must be logged in to get your collection count!")
+            println("You must be logged in to get your follower count!")
             return@start
         }
 
-        val collectionCountQuery = Database.connection.prepareStatement(
+        val followerCountQuery = Database.connection.prepareStatement(
             """
                 SELECT COUNT(*)
                 FROM follows
                 WHERE followee_id = ?
             """.trimIndent()
         )
-        collectionCountQuery.setInt(1, state.user!!.id)
-        val (_, queryResult) = Database.runQuery(collectionCountQuery, Follows::class)
+        followerCountQuery.setInt(1, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(followerCountQuery, Follows::class)
         val resultCount = queryResult.first() as Int
         if (resultCount == 1) println("You have 1 follower")
         else println("You have $resultCount followers")
@@ -312,7 +311,39 @@ object UserActions {
     }
 
     val findMyTop10: CommandCallback = start@{ state, _ ->
-        println("Not implemented yet")
+        if (state.user == null) {
+            println("You must be logged in to see your top 10 books!")
+            return@start
+        }
+
+        val top10BooksQuery = Database.connection.prepareStatement(
+            """
+                SELECT TOP 10 b.title, b.page_length, b.release_date
+                FROM book b 
+                LEFT JOIN reads r 
+                ON b.book_id = r.book_id
+                WHERE r.reader_id = ?
+            """.trimIndent()
+        )
+        top10BooksQuery.setInt(1, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(top10BooksQuery, Book::class)
+
+        println()
+        table {
+            header("Title", "Page Length", "Release Date")
+            queryResult.map {
+                val asBook = it as Book
+                //val asComputed = it as Computed
+                this.row(asBook.title, asBook.pageLength, asBook.releaseDate)
+            }
+
+            hints {
+                alignment("Title", Table.Hints.Alignment.LEFT)
+                alignment("Page Length", Table.Hints.Alignment.LEFT)
+                alignment("Release Date", Table.Hints.Alignment.LEFT)
+                borderStyle = Table.BorderStyle.SINGLE_LINE
+            }
+        }.print(System.out)
         return@start
     }
 

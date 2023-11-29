@@ -30,7 +30,6 @@ class CommandManager(var state: State, vararg commands: Command) {
                 following
                 followers
                 top10
-                recommend [recent | followers | month | for_me]
                 exit
         collection
             list
@@ -44,6 +43,7 @@ class CommandManager(var state: State, vararg commands: Command) {
                 delete
         book
             search [name | authors | publisher | genre | rel_date_gt | rel_date_lt] [value] (sort=)[name | publisher | genre | rel_year | none] [asc | desc | none]
+            recommend [recent | followers | month | for_me]
             read [id | random]
                 stop
             enter [id] 

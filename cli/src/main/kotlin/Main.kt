@@ -31,6 +31,7 @@ import utils.State
  *                 delete
  *         book
  *             search [name | authors | publishers | genre | rel_date_gt | rel_date_lt] [value] (sort=)[name | publisher | genre | rel_year | none] [asc | desc | none]
+ *             recommend [recent | followers | month | for_me]
  *             read [id | random]
  *                 stop
  *             enter [id]
