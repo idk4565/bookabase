@@ -22,7 +22,7 @@ object BookActions {
 
     private val statusPath = Path(System.getProperty("user.dir"), "status.json")
 
-    val listBooks: CommandCallback = start@{ state, (searchCriteria, searchValue, orderCriteria, orderType) ->
+    val listBooks: CommandCallback = start@{ _, (searchCriteria, searchValue, orderCriteria, orderType) ->
         val innerQuery = when (searchCriteria) {
             "name" -> {
                 """
@@ -510,7 +510,7 @@ object BookActions {
         println("You have selected '${book.title}' that has a length of ${book.pageLength}!")
         var startPage: String? = null
         while (startPage == null) {
-            startPage = getInput("Please enter start page: ", 10)
+            startPage = getInput("Please enter start page: ")
             if (!startPage.isNullOrEmpty() && startPage.toIntOrNull() != null && startPage.toInt() < book.pageLength) break
         }
 
@@ -564,7 +564,7 @@ object BookActions {
         )
         var endPage: String? = null
         while (endPage == null) {
-            endPage = getInput("Please enter end page: ", 10)
+            endPage = getInput("Please enter end page: ")
             if (!endPage.isNullOrEmpty() && endPage.toIntOrNull() != null && endPage.toInt() <= book.pageLength) break
         }
 
@@ -677,10 +677,10 @@ object BookActions {
         state.book = null
     }
 
-    private fun getInput(prompt: String, length: Int): String? {
+    private fun getInput(prompt: String): String? {
         print(prompt)
         val result = readln()
-        if (result.isEmpty() || result.length > length) {
+        if (result.isEmpty() || result.length > 10) {
             return null
         }
 
