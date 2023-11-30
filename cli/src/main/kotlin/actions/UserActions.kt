@@ -375,9 +375,9 @@ object UserActions {
                 val asComputed = it as Computed
                 //if rating wasn't given, let's replace that with a space
                 if (asComputed.computed1 == -1) {
-                    this.row(asBook.title, asBook.pageLength, asBook.releaseDate, "")
+                    this.row(asBook.title, asBook.pageLength, asBook.releaseDate, "N/A")
                 } else {
-                    this.row(asBook.title, asBook.pageLength, asBook.releaseDate, asComputed.computed1)
+                    this.row(asBook.title, asBook.pageLength, asBook.releaseDate, "${asComputed.computed1}/5")
                 }
             }
 
