@@ -333,23 +333,16 @@ object UserActions {
          */
         val top10BooksQuery = Database.connection.prepareStatement(
             """
-                SELECT
-                    b.title,
-                    b.page_length,
-                    b.release_date,
+                SELECT b.title, b.page_length, b.release_date,
                     COALESCE(MAX(ra.rating), -1)::INTEGER AS computed1
-                FROM
-                    book b
-                LEFT JOIN
-                    reads r ON b.book_id = r.book_id
-                LEFT JOIN
-                    rates ra ON b.book_id = ra.book_id AND ra.reader_id = ?
-                WHERE
-                    r.reader_id = ?
-                GROUP BY
-                    b.book_id, b.title, b.release_date
-                ORDER BY
-                    computed1 DESC
+                FROM book b
+                LEFT JOIN reads r 
+                    ON b.book_id = r.book_id
+                LEFT JOIN rates ra 
+                    ON b.book_id = ra.book_id AND ra.reader_id = ?
+                WHERE r.reader_id = ?
+                GROUP BY b.book_id, b.title, b.release_date
+                ORDER BY computed1 DESC
                 LIMIT 10;
             """.trimIndent()
         )
