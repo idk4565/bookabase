@@ -65,8 +65,8 @@ fun main(args: Array<String>) {
         Command("user", "unfollow", listOf { it.isNotEmpty() && it.length <= 12 }, UserActions.unfollowUser),
         Command("user", "collections", listOf(), UserActions.findMyCollectionCount),
         Command("user", "following", listOf(), UserActions.findMyFollowingCount),
-        Command("user", "following", listOf(), UserActions.findMyFollowerCount),
-        Command("user", "following", listOf(), UserActions.findMyTop10),
+        Command("user", "followers", listOf(), UserActions.findMyFollowerCount),
+        Command("user", "top10", listOf(), UserActions.findMyTop10),
         // Collection Commands
         Command("collection", "list", listOf(), CollectionActions.listCollections),
         Command("collection", "books", listOf { it.toIntOrNull() != null }, CollectionActions.booksInCollection),

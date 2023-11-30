@@ -255,14 +255,14 @@ object UserActions {
 
         val collectionCountQuery = Database.connection.prepareStatement(
             """
-                SELECT COUNT(*)
+                SELECT COUNT(*)::INTEGER as computed1
                 FROM collection
                 WHERE reader_id = ?
             """.trimIndent()
         )
         collectionCountQuery.setInt(1, state.user!!.id)
-        val (_, queryResult) = Database.runQuery(collectionCountQuery, Collection::class)
-        val resultCount = queryResult.first() as Int
+        val (_, queryResult) = Database.runQuery(collectionCountQuery, Collection::class, Computed::class)
+        val resultCount = (queryResult.first() as Computed).computed1
         if (resultCount == 1) println("You have 1 collection")
         else println("You have $resultCount collections")
         return@start
@@ -276,14 +276,14 @@ object UserActions {
 
         val followingCountQuery = Database.connection.prepareStatement(
             """
-                SELECT COUNT(*)
+                SELECT COUNT(*)::INTEGER as computed1
                 FROM follows
                 WHERE follower_id = ?
             """.trimIndent()
         )
         followingCountQuery.setInt(1, state.user!!.id)
-        val (_, queryResult) = Database.runQuery(followingCountQuery, Follows::class)
-        val resultCount = queryResult.first() as Int
+        val (_, queryResult) = Database.runQuery(followingCountQuery, Follows::class, Computed::class)
+        val resultCount = (queryResult.first() as Computed).computed1
         if (resultCount == 1) println("You are following 1 user")
         else println("You are following $resultCount users")
         return@start
@@ -297,14 +297,14 @@ object UserActions {
 
         val followerCountQuery = Database.connection.prepareStatement(
             """
-                SELECT COUNT(*)
+                SELECT COUNT(*)::INTEGER as computed1
                 FROM follows
                 WHERE followee_id = ?
             """.trimIndent()
         )
         followerCountQuery.setInt(1, state.user!!.id)
-        val (_, queryResult) = Database.runQuery(followerCountQuery, Follows::class)
-        val resultCount = queryResult.first() as Int
+        val (_, queryResult) = Database.runQuery(followerCountQuery, Follows::class, Computed::class)
+        val resultCount = (queryResult.first() as Computed).computed1
         if (resultCount == 1) println("You have 1 follower")
         else println("You have $resultCount followers")
         return@start
@@ -316,31 +316,76 @@ object UserActions {
             return@start
         }
 
+        /**
+         * SELECT sub.title, sub.page_length, sub.release_date, rate.rating
+         *                 FROM (
+         *                     SELECT *
+         *                     FROM book b
+         *                     INNER JOIN reads r
+         *                     ON r.book_id = b.book_id
+         *                     GROUP BY b.book_id
+         *                 ) sub
+         *                 INNER JOIN rates rate
+         *                 ON sub.book_id = rate.book_id
+         *                 WHERE r.reader_id = ?
+         *                 ORDER BY rate.rating DESC
+         *                 LIMIT 10
+         */
         val top10BooksQuery = Database.connection.prepareStatement(
             """
-                SELECT TOP 10 b.title, b.page_length, b.release_date
-                FROM book b 
-                LEFT JOIN reads r 
-                ON b.book_id = r.book_id
-                WHERE r.reader_id = ?
+                SELECT
+                    b.title,
+                    b.page_length,
+                    b.release_date,
+                    COALESCE(MAX(ra.rating), -1)::INTEGER AS computed1
+                FROM
+                    book b
+                LEFT JOIN
+                    reads r ON b.book_id = r.book_id
+                LEFT JOIN
+                    rates ra ON b.book_id = ra.book_id AND ra.reader_id = ?
+                WHERE
+                    r.reader_id = ?
+                GROUP BY
+                    b.book_id, b.title, b.release_date
+                ORDER BY
+                    computed1 DESC
+                LIMIT 10;
             """.trimIndent()
         )
         top10BooksQuery.setInt(1, state.user!!.id)
-        val (_, queryResult) = Database.runQuery(top10BooksQuery, Book::class)
+        top10BooksQuery.setInt(2, state.user!!.id)
+        val (_, queryResult) = Database.runQuery(top10BooksQuery, Book::class, Reads::class, Rates::class, Computed::class)
+
+        if (queryResult.isEmpty()) {
+            println("You haven't read any books")
+            return@start
+        } else if (queryResult.size == 1) {
+            println("You haven't read 10 books, but here's your top " + queryResult.size + " book")
+        }
+        else if (queryResult.size < 10){
+            println("You haven't read 10 books, but here's your top " + queryResult.size + " books")
+        }
 
         println()
         table {
-            header("Title", "Page Length", "Release Date")
+            header("Title", "Page Length", "Release Date", "Rating")
             queryResult.map {
                 val asBook = it as Book
-                //val asComputed = it as Computed
-                this.row(asBook.title, asBook.pageLength, asBook.releaseDate)
+                val asComputed = it as Computed
+                //if rating wasn't given, let's replace that with a space
+                if (asComputed.computed1 == -1) {
+                    this.row(asBook.title, asBook.pageLength, asBook.releaseDate, "")
+                } else {
+                    this.row(asBook.title, asBook.pageLength, asBook.releaseDate, asComputed.computed1)
+                }
             }
 
             hints {
                 alignment("Title", Table.Hints.Alignment.LEFT)
                 alignment("Page Length", Table.Hints.Alignment.LEFT)
                 alignment("Release Date", Table.Hints.Alignment.LEFT)
+                alignment("Rating", Table.Hints.Alignment.LEFT)
                 borderStyle = Table.BorderStyle.SINGLE_LINE
             }
         }.print(System.out)
