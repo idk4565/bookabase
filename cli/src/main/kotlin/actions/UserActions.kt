@@ -316,21 +316,6 @@ object UserActions {
             return@start
         }
 
-        /**
-         * SELECT sub.title, sub.page_length, sub.release_date, rate.rating
-         *                 FROM (
-         *                     SELECT *
-         *                     FROM book b
-         *                     INNER JOIN reads r
-         *                     ON r.book_id = b.book_id
-         *                     GROUP BY b.book_id
-         *                 ) sub
-         *                 INNER JOIN rates rate
-         *                 ON sub.book_id = rate.book_id
-         *                 WHERE r.reader_id = ?
-         *                 ORDER BY rate.rating DESC
-         *                 LIMIT 10
-         */
         val top10BooksQuery = Database.connection.prepareStatement(
             """
                 SELECT b.title, b.page_length, b.release_date,
